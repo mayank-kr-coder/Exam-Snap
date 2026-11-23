@@ -39,9 +39,19 @@
     <!-- Razorpay Checkout Script (Client side) -->
     <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
     <script>
+      // Automatically unregister service worker and purge stale cache
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var name of names) {
+            caches.delete(name);
+          }
         });
       }
     </script>
