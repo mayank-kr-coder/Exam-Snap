@@ -6,8 +6,8 @@ export const PricingPage: React.FC = () => {
   return (
     <div>
       <SEOHead
-        title="Pricing & Plans - Free Forever vs ₹29 Exam Pack"
-        description="ExamSnap pricing details: Free individual tools forever or ₹29 one-time Exam Pack for 1-click batch document dossier processing and PDF compression."
+        title="100% Free Public Utility - No Fees, No Subscriptions"
+        description="ExamSnap is 100% free forever for all Indian government examination aspirants. Zero fees for passport photo resizing, signature cleaning, PDF compression, and batch dossiers."
       />
       <div className="pt-6">
         <PricingSection />

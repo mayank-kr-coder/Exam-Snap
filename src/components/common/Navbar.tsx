@@ -78,25 +78,14 @@ export const Navbar: React.FC = () => {
 
           {/* Action CTAs */}
           <div className="hidden sm:flex items-center gap-3">
-            {/* Batch Processing / Premium CTA */}
-            {isPremium ? (
-              <Link
-                to="/batch-dossier"
-                className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xs"
-              >
-                <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>Premium Unlocked</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={openPaymentModal}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy hover:text-brand-blue bg-saffron/15 hover:bg-saffron/25 border border-saffron/40 px-3 py-1.5 rounded-lg transition"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-saffron-dark" />
-                <span>Exam Pack (₹29)</span>
-              </button>
-            )}
+            {/* Batch Processing Free CTA */}
+            <Link
+              to="/batch-dossier"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy hover:text-brand-blue bg-saffron/15 hover:bg-saffron/25 border border-saffron/40 px-3 py-1.5 rounded-lg transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-saffron-dark" />
+              <span>Batch Dossier (Free)</span>
+            </Link>
 
             {/* Quick Start Tool CTA */}
             <Link
@@ -158,17 +147,14 @@ export const Navbar: React.FC = () => {
               Start Preparing Documents
             </Link>
 
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openPaymentModal();
-              }}
+            <Link
+              to="/batch-dossier"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-navy bg-saffron/20 border border-saffron/40"
             >
               <Sparkles className="w-3.5 h-3.5 text-saffron-dark" />
-              <span>Get Premium Exam Pack (₹29)</span>
-            </button>
+              <span>Batch Dossier Studio (100% Free)</span>
+            </Link>
 
             <div className="flex justify-between items-center pt-2 text-xs text-gray-500">
               <Link

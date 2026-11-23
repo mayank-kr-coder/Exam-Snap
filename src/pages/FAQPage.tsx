@@ -28,15 +28,15 @@ export const FAQPage: React.FC = () => {
     },
     {
       q: 'Can I prepare multiple documents together?',
-      a: 'Yes! With our Premium Exam Pack (₹29 one-time), you can access the Batch Dossier Studio, allowing you to upload your Photo, Signature, and Thumbprint at the same time and generate all three in 1 click.'
+      a: 'Yes! The Batch Dossier Studio is completely free and allows you to upload your Photo, Signature, and Thumbprint at the same time and generate all three formatted documents or download them as an all-in-one ZIP archive in 1 click.'
     },
     {
       q: 'Why do government portals reject photos with dark backgrounds?',
       a: 'Government exam verification systems (like SSC and UPSC facial recognition) require high contrast between the applicants face, ears, and the background. Dark or busy backgrounds confuse automated biometric verification.'
     },
     {
-      q: 'What is the refund policy for the ₹29 Exam Pack?',
-      a: 'We offer a 100% money-back guarantee if an exam portal rejects a document due to dimension or formatting failure caused by our preset specifications.'
+      q: 'Are there any hidden charges or fees?',
+      a: 'None at all. ExamSnap is 100% free forever for all aspirants. No credit card, no fees, and no account creation are required.'
     }
   ];
 

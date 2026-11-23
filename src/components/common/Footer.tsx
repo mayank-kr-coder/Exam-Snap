@@ -98,7 +98,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/batch-dossier" className="text-saffron font-medium hover:underline flex items-center gap-1">
-                  <span>Batch Dossier Pack (₹29)</span>
+                  <span>Batch Dossier Studio (Free)</span>
                 </Link>
               </li>
             </ul>

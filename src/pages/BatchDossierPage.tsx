@@ -234,18 +234,12 @@ Good luck with your examination!
               <h1 className="text-xl sm:text-2xl font-extrabold text-navy">
                 Batch Exam Dossier Studio
               </h1>
-              {isPremium ? (
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Unlocked
-                </span>
-              ) : (
-                <span className="bg-saffron/20 text-saffron-dark text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Exam Pack
-                </span>
-              )}
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                100% Free
+              </span>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Prepare Photo + Signature + Thumb simultaneously and download as a single dossier ZIP.
+              Prepare Photo + Signature + Thumb simultaneously and download as a single dossier ZIP for free.
             </p>
           </div>
         </div>
@@ -273,31 +267,6 @@ Good luck with your examination!
           </select>
         </div>
       </div>
-
-      {/* Premium gate banner if not yet unlocked */}
-      {!isPremium && (
-        <div className="bg-gradient-to-r from-navy to-navy-800 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-elevated">
-          <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-saffron flex-shrink-0" />
-            <div>
-              <h3 className="font-bold text-sm sm:text-base">
-                Unlock 1-Click All-in-One Dossier Processing (₹29)
-              </h3>
-              <p className="text-xs text-gray-300">
-                Format photos, signatures, thumb impressions, and certificates together in one click with zero ads.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={openPaymentModal}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs bg-saffron hover:bg-saffron-light text-navy-900 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm"
-          >
-            <span>Unlock for ₹29</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
 
       {/* 1-Click ZIP Download Action Bar */}
       {hasAnyReady && (

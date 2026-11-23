@@ -212,24 +212,22 @@ export const AdminDashboardPage: React.FC = () => {
       <div className="bg-white rounded-2xl border border-brand-border p-6 shadow-subtle space-y-4">
         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-saffron-dark" />
-            <h3 className="font-bold text-base text-navy">Manage Exam Pack Pricing</h3>
+            <DollarSign className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-bold text-base text-navy">Platform Access & Pricing Mode</h3>
           </div>
-          {pricingSaved && (
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Check className="w-3.5 h-3.5" /> Pricing Saved
-            </span>
-          )}
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            100% Free Public Utility Active
+          </span>
         </div>
 
         <form onSubmit={handleSavePricing} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Price Amount (INR)
+              Price Amount (₹)
             </label>
             <input
               type="number"
-              min="1"
+              min="0"
               value={pricing.packPrice}
               onChange={(e) => setPricing({ ...pricing, packPrice: Number(e.target.value) })}
               className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl font-mono font-bold"
@@ -250,15 +248,22 @@ export const AdminDashboardPage: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Status
+              Access Mode
             </label>
             <select
-              value={pricing.enabled ? 'active' : 'disabled'}
-              onChange={(e) => setPricing({ ...pricing, enabled: e.target.value === 'active' })}
+              value={pricing.packPrice === 0 ? 'free' : 'paid'}
+              onChange={(e) => {
+                const isFree = e.target.value === 'free';
+                setPricing({
+                  ...pricing,
+                  packPrice: isFree ? 0 : 29,
+                  badgeText: isFree ? '100% Free Forever' : 'Instant Access'
+                });
+              }}
               className="w-full px-3 py-2 text-xs border border-gray-300 rounded-xl bg-white"
             >
-              <option value="active">Active & Available</option>
-              <option value="disabled">Disabled</option>
+              <option value="free">100% Free for Everyone</option>
+              <option value="paid">Monetized Pass</option>
             </select>
           </div>
 
@@ -267,7 +272,7 @@ export const AdminDashboardPage: React.FC = () => {
             className="py-2.5 px-4 bg-navy hover:bg-navy-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
           >
             <Save className="w-4 h-4 text-saffron" />
-            <span>Update Pricing</span>
+            <span>Save Settings</span>
           </button>
         </form>
       </div>

@@ -184,7 +184,7 @@ export const HomePage: React.FC = () => {
   const faqs = [
     {
       q: 'Is Sarkari Doc Prep free to use?',
-      a: 'Yes! All individual document resizing, cropping, paper whitening, and compression tools are 100% free with unlimited downloads. An optional one-time ₹29 Exam Pack is available for candidates wanting 1-click batch dossier processing and certificate PDF shrinking.'
+      a: 'Yes! All features—including passport photo resizing, signature paper whitening, compression, PDF optimization, and the 1-click Batch Dossier Studio—are 100% free with unlimited downloads. There are no fees or subscriptions.'
     },
     {
       q: 'Are my photographs or signatures uploaded to a server?',
@@ -204,7 +204,7 @@ export const HomePage: React.FC = () => {
     },
     {
       q: 'Can I prepare multiple documents (Photo + Signature + Thumb) together?',
-      a: 'Yes! Our Premium Exam Pack provides the Batch Dossier Studio where you can upload your Photo, Signature, and Thumbprint simultaneously and download all three formatted documents in 1 click.'
+      a: 'Yes! The Batch Dossier Studio allows you to upload your Photo, Signature, and Thumbprint simultaneously and download all three formatted documents in 1 click or as a single ZIP file completely free.'
     }
   ];
 

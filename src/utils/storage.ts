@@ -25,10 +25,10 @@ export interface PricingConfig {
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
-  packPrice: 29,
+  packPrice: 0,
   currency: 'INR',
   symbol: '₹',
-  badgeText: 'Instant Access',
+  badgeText: '100% Free Forever',
   enabled: true
 };
 
@@ -124,11 +124,7 @@ export function savePricingConfig(pricing: PricingConfig): void {
 }
 
 export function isPremiumUnlocked(): boolean {
-  try {
-    return localStorage.getItem(PREMIUM_UNLOCKED_KEY) === 'true';
-  } catch (e) {
-    return false;
-  }
+  return true; // 100% Free for all aspirants & users!
 }
 
 export function setPremiumUnlocked(unlocked: boolean): void {
