@@ -31,6 +31,11 @@ export const DisclaimerPage: React.FC = () => {
           Exam Snap provides digital image resizing, cropping, compression, and PDF optimization tools to assist candidates in complying with digital upload parameters. Exam Snap does NOT submit examination forms, issue admit cards, or provide recruitment services.
         </p>
 
+        <h2 className="text-base font-bold text-navy">No Guarantee of Application Acceptance</h2>
+        <p>
+          While ExamSnap strictly formats files to the dimensions, DPI, and file size parameters prescribed in official examination notifications, <strong>we do NOT guarantee that any government authority or examination portal will accept an application</strong>. Scrutiny and final acceptance of photographs, signatures, and certificates remain entirely at the sole discretion of the respective examining body.
+        </p>
+
         <h2 className="text-base font-bold text-navy">Preset Verification Notice</h2>
         <p>
           Specifications provided in presets are collected from publicly released official notifications. Each verified preset displays its source notification link and verification date. Users are strongly advised to double-check their official examination advertisement.

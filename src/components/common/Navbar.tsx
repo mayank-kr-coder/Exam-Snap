@@ -21,8 +21,9 @@ export const Navbar: React.FC = () => {
     { name: 'Home', path: '/' },
     { name: 'Photo Resizer', path: '/tools/passport-photo-resizer' },
     { name: 'Signature Resizer', path: '/tools/signature-resizer' },
-    { name: 'Compressor', path: '/tools/photo-compressor' },
-    { name: 'Date Stamp', path: '/tools/date-stamp-tool' },
+    { name: 'Size Checker', path: '/tools/file-size-checker' },
+    { name: 'A4 Print Sheet', path: '/tools/passport-photo-print-sheet' },
+    { name: 'Batch Processor', path: '/tools/batch-processor' },
     { name: 'All Tools', path: '/tools' },
     { name: 'Exam Presets', path: '/presets' },
   ];

@@ -11,6 +11,9 @@ import {
   FileText, 
   RefreshCw, 
   Crop,
+  FileCheck2,
+  Printer,
+  Layers,
   ArrowRight
 } from 'lucide-react';
 import { ToolInfo } from '../../types/tool';
@@ -42,6 +45,12 @@ export const ToolCard: React.FC<ToolCardProps> = ({ tool }) => {
         return <RefreshCw className="w-5 h-5 text-teal-600" />;
       case 'Crop':
         return <Crop className="w-5 h-5 text-cyan-600" />;
+      case 'FileCheck2':
+        return <FileCheck2 className="w-5 h-5 text-emerald-600" />;
+      case 'Printer':
+        return <Printer className="w-5 h-5 text-indigo-600" />;
+      case 'Layers':
+        return <Layers className="w-5 h-5 text-purple-600" />;
       default:
         return <Camera className="w-5 h-5 text-navy" />;
     }

@@ -8,7 +8,10 @@ export type ToolId =
   | 'thumb-impression-resizer'
   | 'pdf-compressor'
   | 'image-to-jpg'
-  | 'photo-cropper';
+  | 'photo-cropper'
+  | 'file-size-checker'
+  | 'passport-photo-print-sheet'
+  | 'batch-processor';
 
 export interface ToolInfo {
   id: ToolId;

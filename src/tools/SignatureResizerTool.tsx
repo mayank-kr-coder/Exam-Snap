@@ -8,6 +8,7 @@ import { PresetSpecsBadge } from '../components/editor/PresetSpecsBadge';
 import { DownloadButton } from '../components/common/DownloadButton';
 import { SEOHead } from '../components/common/SEOHead';
 import { DimensionControls } from '../components/editor/DimensionControls';
+import { BeforeAfterViewer } from '../components/editor/BeforeAfterViewer';
 import { 
   loadImage, 
   processImageToCanvas, 
@@ -44,6 +45,8 @@ export const SignatureResizerTool: React.FC = () => {
 
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState<boolean>(false);
 
   useEffect(() => {
     if (spec) {
@@ -63,6 +66,8 @@ export const SignatureResizerTool: React.FC = () => {
     try {
       setOriginalFile(file);
       setOriginalSizeKb(Number((file.size / 1024).toFixed(1)));
+      if (originalUrl) URL.revokeObjectURL(originalUrl);
+      setOriginalUrl(URL.createObjectURL(file));
       const img = await loadImage(file);
       setSourceImage(img);
     } catch (err: any) {
@@ -108,10 +113,12 @@ export const SignatureResizerTool: React.FC = () => {
 
   const resetAll = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
     setSourceImage(null);
     setOriginalFile(null);
     setResult(null);
     setPreviewUrl(null);
+    setOriginalUrl(null);
   };
 
   const aspectRatio = widthPx / heightPx;
@@ -275,6 +282,28 @@ export const SignatureResizerTool: React.FC = () => {
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
                   )}
                   <span>{result.message}</span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowComparison(!showComparison)}
+                  className="w-full py-2 px-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-navy font-bold text-xs transition"
+                >
+                  {showComparison ? 'Hide Comparison' : '👁️ Compare Cleaned vs Original'}
+                </button>
+              </div>
+
+              {showComparison && originalUrl && previewUrl && (
+                <div className="pt-2 text-left">
+                  <BeforeAfterViewer
+                    originalUrl={originalUrl}
+                    processedUrl={previewUrl}
+                    originalSizeKb={originalSizeKb}
+                    processedSizeKb={result?.sizeKb}
+                    title="Paper Whitening & Contrast Comparison"
+                  />
                 </div>
               )}
 

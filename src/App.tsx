@@ -33,6 +33,9 @@ import { ThumbImpressionTool } from './tools/ThumbImpressionTool';
 import { PdfCompressorTool } from './tools/PdfCompressorTool';
 import { ImageToJpgTool } from './tools/ImageToJpgTool';
 import { PhotoCropperTool } from './tools/PhotoCropperTool';
+import { FileSizeCheckerTool } from './tools/FileSizeCheckerTool';
+import { PassportPrintSheetTool } from './tools/PassportPrintSheetTool';
+import { BatchProcessorTool } from './tools/BatchProcessorTool';
 
 export const App: React.FC = () => {
   return (
@@ -63,6 +66,9 @@ export const App: React.FC = () => {
                 <Route path="/tools/pdf-compressor" element={<PdfCompressorTool />} />
                 <Route path="/tools/image-to-jpg" element={<ImageToJpgTool />} />
                 <Route path="/tools/photo-cropper" element={<PhotoCropperTool />} />
+                <Route path="/tools/file-size-checker" element={<FileSizeCheckerTool />} />
+                <Route path="/tools/passport-photo-print-sheet" element={<PassportPrintSheetTool />} />
+                <Route path="/tools/batch-processor" element={<BatchProcessorTool />} />
 
                 {/* Dedicated SEO Landing Pages */}
                 <Route path="/tools/:toolSlug" element={<SEOToolLandingPage />} />

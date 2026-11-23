@@ -9,6 +9,9 @@ import { PresetSpecsBadge } from '../components/editor/PresetSpecsBadge';
 import { DownloadButton } from '../components/common/DownloadButton';
 import { SEOHead } from '../components/common/SEOHead';
 import { DimensionControls } from '../components/editor/DimensionControls';
+import { QualityCheckerBadge } from '../components/editor/QualityCheckerBadge';
+import { BeforeAfterViewer } from '../components/editor/BeforeAfterViewer';
+import { Link } from 'react-router-dom';
 import { 
   loadImage, 
   processImageToCanvas, 
@@ -72,6 +75,8 @@ export const PassportPhotoTool: React.FC = () => {
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState<boolean>(false);
 
   // Sync with preset changes
   useEffect(() => {
@@ -98,6 +103,8 @@ export const PassportPhotoTool: React.FC = () => {
     try {
       setOriginalFile(file);
       setOriginalSizeKb(Number((file.size / 1024).toFixed(1)));
+      if (originalUrl) URL.revokeObjectURL(originalUrl);
+      setOriginalUrl(URL.createObjectURL(file));
       const img = await loadImage(file);
       setSourceImage(img);
     } catch (err: any) {
@@ -157,10 +164,12 @@ export const PassportPhotoTool: React.FC = () => {
 
   const resetAll = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
     setSourceImage(null);
     setOriginalFile(null);
     setResult(null);
     setPreviewUrl(null);
+    setOriginalUrl(null);
   };
 
   const aspectRatio = widthPx / heightPx;
@@ -245,6 +254,9 @@ export const PassportPhotoTool: React.FC = () => {
                 Change Image
               </button>
             </div>
+
+            {/* Real-time Quality & Blur Checker Badge */}
+            <QualityCheckerBadge image={sourceImage} />
 
             <CanvasCropper
               image={sourceImage}
@@ -408,6 +420,37 @@ export const PassportPhotoTool: React.FC = () => {
                 savedBytes={Math.max(0, (originalSizeKb - (result?.sizeKb || 0)) * 1024)}
                 label="Download Exam-Ready JPG"
               />
+
+              {/* Additional Print Sheet & Comparison CTAs */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowComparison(!showComparison)}
+                  className="py-2 px-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-navy font-bold text-xs transition"
+                >
+                  {showComparison ? 'Hide Comparison' : '👁️ Compare Quality'}
+                </button>
+
+                <Link
+                  to="/tools/passport-photo-print-sheet"
+                  className="py-2 px-2.5 rounded-xl bg-saffron/20 hover:bg-saffron/30 border border-saffron/50 text-navy font-bold text-xs transition flex items-center justify-center gap-1"
+                >
+                  <span>🖨️ A4 Print Sheet</span>
+                </Link>
+              </div>
+
+              {/* Before & After Interactive Slider View */}
+              {showComparison && originalUrl && previewUrl && (
+                <div className="pt-2">
+                  <BeforeAfterViewer
+                    originalUrl={originalUrl}
+                    processedUrl={previewUrl}
+                    originalSizeKb={originalSizeKb}
+                    processedSizeKb={result?.sizeKb}
+                    title="Before vs After Inspection"
+                  />
+                </div>
+              )}
 
               <p className="text-[10px] text-gray-400">
                 Guaranteed JPEG format compatible with SSC, UPSC, and state government portals.
