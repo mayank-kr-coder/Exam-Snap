@@ -8,6 +8,7 @@ import { CompressionControls } from '../components/editor/CompressionControls';
 import { PresetSpecsBadge } from '../components/editor/PresetSpecsBadge';
 import { DownloadButton } from '../components/common/DownloadButton';
 import { SEOHead } from '../components/common/SEOHead';
+import { DimensionControls } from '../components/editor/DimensionControls';
 import { 
   loadImage, 
   processImageToCanvas, 
@@ -280,26 +281,16 @@ export const PassportPhotoTool: React.FC = () => {
               </div>
 
               {dimensionMode === 'px' ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-gray-500 mb-1">Width (px)</label>
-                    <input
-                      type="number"
-                      value={widthPx}
-                      onChange={(e) => setWidthPx(Math.max(50, Number(e.target.value)))}
-                      className="w-full px-2.5 py-1.5 text-xs font-mono border border-gray-300 rounded-lg bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-500 mb-1">Height (px)</label>
-                    <input
-                      type="number"
-                      value={heightPx}
-                      onChange={(e) => setHeightPx(Math.max(50, Number(e.target.value)))}
-                      className="w-full px-2.5 py-1.5 text-xs font-mono border border-gray-300 rounded-lg bg-white"
-                    />
-                  </div>
-                </div>
+                <DimensionControls
+                  widthPx={widthPx}
+                  heightPx={heightPx}
+                  toolType="photo"
+                  lockAspectDefault={true}
+                  onChange={(w, h) => {
+                    setWidthPx(w);
+                    setHeightPx(h);
+                  }}
+                />
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   <div>

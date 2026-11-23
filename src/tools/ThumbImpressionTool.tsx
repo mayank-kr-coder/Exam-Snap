@@ -5,6 +5,7 @@ import { SignatureControls } from '../components/editor/SignatureControls';
 import { CompressionControls } from '../components/editor/CompressionControls';
 import { DownloadButton } from '../components/common/DownloadButton';
 import { SEOHead } from '../components/common/SEOHead';
+import { DimensionControls } from '../components/editor/DimensionControls';
 import { loadImage, processImageToCanvas, CropRect, ImageAdjustments } from '../utils/imageProcessing';
 import { compressCanvasToTarget, CompressionResult } from '../utils/compression';
 import { Fingerprint, RotateCcw, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -16,6 +17,7 @@ export const ThumbImpressionTool: React.FC = () => {
 
   const [widthPx, setWidthPx] = useState<number>(240);
   const [heightPx, setHeightPx] = useState<number>(240);
+  const [lockAspect, setLockAspect] = useState<boolean>(true);
 
   const [cropRect, setCropRect] = useState<CropRect>({ x: 0, y: 0, width: 100, height: 100 });
   const [adjustments, setAdjustments] = useState<ImageAdjustments>({
@@ -136,35 +138,23 @@ export const ThumbImpressionTool: React.FC = () => {
 
             <CanvasCropper
               image={sourceImage}
-              aspectRatio={1} // 1:1 square for thumb impressions
-              lockAspect={true}
+              aspectRatio={widthPx / heightPx}
+              lockAspect={lockAspect}
               showFaceGuide={false}
               onCropChange={setCropRect}
             />
 
-            <div className="bg-brand-lightBg p-3.5 rounded-xl border border-gray-100 space-y-2">
-              <span className="text-xs font-semibold text-gray-700 block">Output Dimensions</span>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Width (px)</label>
-                  <input
-                    type="number"
-                    value={widthPx}
-                    onChange={(e) => setWidthPx(Math.max(40, Number(e.target.value)))}
-                    className="w-full px-2.5 py-1.5 text-xs font-mono border border-gray-300 rounded-lg bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Height (px)</label>
-                  <input
-                    type="number"
-                    value={heightPx}
-                    onChange={(e) => setHeightPx(Math.max(40, Number(e.target.value)))}
-                    className="w-full px-2.5 py-1.5 text-xs font-mono border border-gray-300 rounded-lg bg-white"
-                  />
-                </div>
-              </div>
-            </div>
+            <DimensionControls
+              widthPx={widthPx}
+              heightPx={heightPx}
+              toolType="thumb"
+              lockAspectDefault={lockAspect}
+              onLockAspectChange={setLockAspect}
+              onChange={(w, h) => {
+                setWidthPx(w);
+                setHeightPx(h);
+              }}
+            />
 
             <SignatureControls
               adjustments={adjustments}
