@@ -306,7 +306,22 @@ export const AdminDashboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {presets.map((preset) => {
+              {presets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                    <p className="font-semibold text-sm text-navy mb-1">No presets loaded.</p>
+                    <p className="text-xs mb-3">Click below to restore all official verified presets (SSC, UPSC, Railway, Banking).</p>
+                    <button
+                      type="button"
+                      onClick={resetAllPresets}
+                      className="px-3.5 py-1.5 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-800 transition"
+                    >
+                      Restore Official Presets
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                presets.map((preset) => {
                 const isVerified = preset.status === 'verified';
                 const pSpec = preset.documents.photo;
                 const sSpec = preset.documents.signature;
@@ -371,7 +386,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

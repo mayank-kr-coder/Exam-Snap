@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ExamPreset, ExamDocumentSpec } from '../types/preset';
 import { getSavedPresets, savePresets, resetPresetsToDefault } from '../utils/storage';
+import { DEFAULT_EXAM_PRESETS } from '../exam-presets/defaultPresets';
 
 interface ExamPresetContextType {
   presets: ExamPreset[];
@@ -16,11 +17,18 @@ interface ExamPresetContextType {
 const ExamPresetContext = createContext<ExamPresetContextType | undefined>(undefined);
 
 export const ExamPresetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [presets, setPresets] = useState<ExamPreset[]>(() => getSavedPresets());
+  const [presets, setPresets] = useState<ExamPreset[]>(() => {
+    const saved = getSavedPresets();
+    return saved && saved.length > 0 ? saved : DEFAULT_EXAM_PRESETS;
+  });
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>('ssc-cgl-chsl');
 
   useEffect(() => {
-    savePresets(presets);
+    if (presets.length === 0) {
+      setPresets(DEFAULT_EXAM_PRESETS);
+    } else {
+      savePresets(presets);
+    }
   }, [presets]);
 
   const selectedPreset = presets.find((p) => p.id === selectedPresetId) || null;
