@@ -112,6 +112,7 @@ export const ThumbImpressionTool: React.FC = () => {
         <div className="max-w-2xl mx-auto py-8">
           <UploadArea
             onFileSelect={handleFileSelect}
+            sampleType="thumb"
             label="Upload Thumb Impression (LTI)"
             subLabel="Capture clear blue or black ink impression on white unruled paper"
           />

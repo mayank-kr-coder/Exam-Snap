@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import JSZip from 'jszip';
+import confetti from 'canvas-confetti';
 import { useExamPresets } from '../context/ExamPresetContext';
 import { usePayment } from '../context/PaymentContext';
 import { SEOHead } from '../components/common/SEOHead';
@@ -6,17 +8,23 @@ import { DownloadButton } from '../components/common/DownloadButton';
 import { loadImage, processImageToCanvas, CropRect } from '../utils/imageProcessing';
 import { compressCanvasToTarget } from '../utils/compression';
 import { 
+  createSamplePassportPhotoBlob, 
+  createSampleSignatureBlob, 
+  createSampleThumbprintBlob 
+} from '../utils/sampleImages';
+import { 
   Sparkles, 
   Crown, 
   Upload, 
   CheckCircle2, 
   FileCheck2, 
   ArrowRight, 
-  ShieldCheck, 
   Camera, 
   PenTool, 
   Fingerprint,
-  Lock
+  Archive,
+  Download,
+  RotateCcw
 } from 'lucide-react';
 
 export const BatchDossierPage: React.FC = () => {
@@ -36,20 +44,16 @@ export const BatchDossierPage: React.FC = () => {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [thumbSizeKb, setThumbSizeKb] = useState<number>(0);
 
-  const [candidateName, setCandidateName] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [candidateName, setCandidateName] = useState('MAYANK KUMAR');
+  const [isZipping, setIsZipping] = useState(false);
 
   // Process photo
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+  const processPhotoFile = async (file: File) => {
     const spec = selectedPreset?.documents.photo;
-
     const img = await loadImage(file);
     const targetW = spec?.requiredWidthPx || 413;
     const targetH = spec?.requiredHeightPx || 531;
 
-    // Center crop
     const imgW = img.naturalWidth || img.width;
     const imgH = img.naturalHeight || img.height;
     const crop: CropRect = {
@@ -75,11 +79,8 @@ export const BatchDossierPage: React.FC = () => {
   };
 
   // Process signature
-  const handleSignUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+  const processSignFile = async (file: File) => {
     const spec = selectedPreset?.documents.signature;
-
     const img = await loadImage(file);
     const targetW = spec?.requiredWidthPx || 472;
     const targetH = spec?.requiredHeightPx || 236;
@@ -103,12 +104,9 @@ export const BatchDossierPage: React.FC = () => {
     setSignUrl(URL.createObjectURL(res.blob));
   };
 
-  // Process thumb
-  const handleThumbUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+  // Process thumbprint
+  const processThumbFile = async (file: File) => {
     const spec = selectedPreset?.documents.thumb;
-
     const img = await loadImage(file);
     const targetW = spec?.requiredWidthPx || 240;
     const targetH = spec?.requiredHeightPx || 240;
@@ -132,11 +130,97 @@ export const BatchDossierPage: React.FC = () => {
     setThumbUrl(URL.createObjectURL(res.blob));
   };
 
+  // One-click demo populate
+  const handleLoadDemoDossier = async () => {
+    const [photo, sign, thumb] = await Promise.all([
+      createSamplePassportPhotoBlob(),
+      createSampleSignatureBlob(),
+      createSampleThumbprintBlob()
+    ]);
+    await Promise.all([
+      processPhotoFile(photo),
+      processSignFile(sign),
+      processThumbFile(thumb)
+    ]);
+  };
+
+  // Download all as ZIP
+  const handleDownloadZip = async () => {
+    if (!photoBlob && !signBlob && !thumbBlob) return;
+
+    setIsZipping(true);
+    const zip = new JSZip();
+    const prefix = selectedPreset?.shortCode || 'ExamSnap';
+
+    if (photoBlob) {
+      zip.file(`${prefix}_01_Passport_Photo.jpg`, photoBlob);
+    }
+    if (signBlob) {
+      zip.file(`${prefix}_02_Signature.jpg`, signBlob);
+    }
+    if (thumbBlob) {
+      zip.file(`${prefix}_03_Thumb_Impression.jpg`, thumbBlob);
+    }
+
+    // Add upload instructions README in zip
+    const readmeContent = `====================================================
+EXAM SNAP (SARKARI DOC PREP) — EXAM APPLICATION DOSSIER
+Target Examination: ${selectedPreset?.name || 'General Govt Exam'}
+Verified Date: ${selectedPreset?.lastVerifiedDate || '2026'}
+====================================================
+
+YOUR FORMATTED FILES IN THIS DOSSIER:
+1. ${prefix}_01_Passport_Photo.jpg
+   - Dimensions: ${selectedPreset?.documents.photo?.requiredWidthPx}x${selectedPreset?.documents.photo?.requiredHeightPx} px
+   - File Size: ${photoSizeKb} KB (Target: ${selectedPreset?.documents.photo?.minKb}-${selectedPreset?.documents.photo?.maxKb} KB)
+   - Status: Ready for Portal Upload
+
+2. ${prefix}_02_Signature.jpg
+   - Dimensions: ${selectedPreset?.documents.signature?.requiredWidthPx}x${selectedPreset?.documents.signature?.requiredHeightPx} px
+   - File Size: ${signSizeKb} KB (Target: ${selectedPreset?.documents.signature?.minKb}-${selectedPreset?.documents.signature?.maxKb} KB)
+   - Status: Cleaned White Paper with High-Contrast Ink
+
+3. ${prefix}_03_Thumb_Impression.jpg
+   - Left Thumb Impression (LTI) Ready
+
+PRIVACY NOTICE:
+All files were generated client-side inside your browser. No biometric records were kept.
+Good luck with your examination!
+====================================================`;
+
+    zip.file('Upload_Instructions.txt', readmeContent);
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prefix}_Application_Dossier.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setIsZipping(false);
+
+    try {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#FF9933', '#14213D', '#2563EB']
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const hasAnyReady = Boolean(photoBlob || signBlob || thumbBlob);
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <SEOHead
-        title="Batch Exam Dossier Studio - 1-Click All Documents"
-        description="Prepare your Passport Photo, Signature, and Thumb Impression together in 1 click for SSC, UPSC, and Banking exams."
+        title="Batch Exam Dossier Studio - 1-Click All Documents (.ZIP)"
+        description="Prepare your Passport Photo, Signature, and Thumb Impression together in 1 click and download as a single Exam Dossier ZIP."
       />
 
       {/* Header */}
@@ -161,14 +245,21 @@ export const BatchDossierPage: React.FC = () => {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Prepare Photo + Signature + Thumb Impression simultaneously formatted to official portal specs.
+              Prepare Photo + Signature + Thumb simultaneously and download as a single dossier ZIP.
             </p>
           </div>
         </div>
 
-        {/* Exam Preset Selection */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-gray-700">Exam:</label>
+          <button
+            type="button"
+            onClick={handleLoadDemoDossier}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-saffron/15 text-navy-900 border border-saffron/40 hover:bg-saffron/25 transition flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-saffron-dark" />
+            <span>Load Demo Dossier</span>
+          </button>
+
           <select
             value={selectedPreset?.id || 'ssc-cgl-chsl'}
             onChange={(e) => selectPresetById(e.target.value)}
@@ -183,7 +274,7 @@ export const BatchDossierPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Premium gate banner if not yet purchased */}
+      {/* Premium gate banner if not yet unlocked */}
       {!isPremium && (
         <div className="bg-gradient-to-r from-navy to-navy-800 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-elevated">
           <div className="flex items-center gap-3">
@@ -204,6 +295,35 @@ export const BatchDossierPage: React.FC = () => {
           >
             <span>Unlock for ₹29</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* 1-Click ZIP Download Action Bar */}
+      {hasAnyReady && (
+        <div className="bg-white p-4 rounded-2xl border-2 border-navy shadow-card flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-navy text-saffron flex items-center justify-center font-bold">
+              <Archive className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-navy">
+                Complete Exam Application Dossier Ready
+              </h3>
+              <p className="text-xs text-gray-500">
+                Includes all formatted JPEGs + Official Upload Verification Guide.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadZip}
+            disabled={isZipping}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs text-white bg-navy hover:bg-navy-800 shadow-elevated transition flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4 text-saffron" />
+            <span>{isZipping ? 'Archiving Files...' : 'Download Complete Dossier (.ZIP)'}</span>
           </button>
         </div>
       )}
@@ -234,7 +354,7 @@ export const BatchDossierPage: React.FC = () => {
                   <Upload className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-xs font-semibold text-navy">Upload Photo</span>
                   <span className="text-[10px] text-gray-400 mt-0.5">JPG / PNG</span>
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && processPhotoFile(e.target.files[0])} className="hidden" />
                 </label>
               )}
             </div>
@@ -280,7 +400,7 @@ export const BatchDossierPage: React.FC = () => {
                   <Upload className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-xs font-semibold text-navy">Upload Signature</span>
                   <span className="text-[10px] text-gray-400 mt-0.5">Black or Blue ink</span>
-                  <input type="file" accept="image/*" onChange={handleSignUpload} className="hidden" />
+                  <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && processSignFile(e.target.files[0])} className="hidden" />
                 </label>
               )}
             </div>
@@ -326,7 +446,7 @@ export const BatchDossierPage: React.FC = () => {
                   <Upload className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-xs font-semibold text-navy">Upload Thumbprint</span>
                   <span className="text-[10px] text-gray-400 mt-0.5">Blue ink impression</span>
-                  <input type="file" accept="image/*" onChange={handleThumbUpload} className="hidden" />
+                  <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && processThumbFile(e.target.files[0])} className="hidden" />
                 </label>
               )}
             </div>

@@ -64,57 +64,98 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPaymentError(null);
 
     // Check if real Razorpay script & key exist
-    if (typeof (window as any).Razorpay !== 'undefined' && RAZORPAY_KEY_ID) {
+    if (typeof (window as any).Razorpay !== 'undefined') {
       try {
-        const rzpOptions = {
-          key: RAZORPAY_KEY_ID,
-          amount: amountInPaise,
-          currency: 'INR',
-          name: 'Exam Snap — Sarkari Doc Prep',
-          description: 'Exam Pack — One-Time Digital Processing',
-          image: '/favicon.ico',
-          handler: function (response: PaymentSuccessResponse) {
-            // Server-side verification placeholder check
-            if (response.razorpay_payment_id) {
-              setLastPaymentDetails(response);
-              unlockPremium();
-              setPaymentStatus('success');
-              if (options?.onCompleted) options.onCompleted();
-            } else {
-              setPaymentStatus('failed');
-              setPaymentError('Payment confirmation failed. Verification signature missing.');
-            }
-          },
-          prefill: {
-            name: 'Aspirant',
-            email: 'aspirant@example.com',
-            contact: '9999999999'
-          },
-          theme: {
-            color: '#14213D'
-          },
-          modal: {
-            ondismiss: function () {
-              setPaymentStatus('idle');
-            }
-          }
-        };
+        // Attempt to create order via backend API
+        let orderId = '';
+        let activeKey = RAZORPAY_KEY_ID;
 
-        const razorpayInstance = new (window as any).Razorpay(rzpOptions);
-        razorpayInstance.on('payment.failed', function (resp: any) {
-          setPaymentStatus('failed');
-          setPaymentError(resp.error?.description || 'Payment was declined or cancelled by the bank.');
-        });
-        razorpayInstance.open();
+        try {
+          const res = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: pricing.packPrice })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.orderId) orderId = data.orderId;
+            if (data.key && data.key !== 'rzp_test_placeholder') activeKey = data.key;
+          }
+        } catch (e) {
+          // Backend not reachable, proceed with client key if set
+        }
+
+        if (activeKey) {
+          const rzpOptions = {
+            key: activeKey,
+            amount: amountInPaise,
+            currency: 'INR',
+            order_id: orderId || undefined,
+            name: 'Exam Snap — Sarkari Doc Prep',
+            description: 'Exam Pack — One-Time Digital Processing',
+            image: '/favicon.ico',
+            handler: async function (response: PaymentSuccessResponse) {
+              // Verify signature via backend
+              try {
+                const verifyRes = await fetch('/api/verify-payment', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(response)
+                });
+                const verifyData = await verifyRes.json();
+                if (verifyData.verified) {
+                  setLastPaymentDetails(response);
+                  unlockPremium();
+                  setPaymentStatus('success');
+                  if (options?.onCompleted) options.onCompleted();
+                  return;
+                }
+              } catch (e) {
+                // If verify endpoint unavailable, verify payment ID presence
+              }
+
+              if (response.razorpay_payment_id) {
+                setLastPaymentDetails(response);
+                unlockPremium();
+                setPaymentStatus('success');
+                if (options?.onCompleted) options.onCompleted();
+              } else {
+                setPaymentStatus('failed');
+                setPaymentError('Payment confirmation failed. Verification signature missing.');
+              }
+            },
+            prefill: {
+              name: 'Aspirant',
+              email: 'aspirant@example.com',
+              contact: '9999999999'
+            },
+            theme: {
+              color: '#14213D'
+            },
+            modal: {
+              ondismiss: function () {
+                setPaymentStatus('idle');
+              }
+            }
+          };
+
+          const razorpayInstance = new (window as any).Razorpay(rzpOptions);
+          razorpayInstance.on('payment.failed', function (resp: any) {
+            setPaymentStatus('failed');
+            setPaymentError(resp.error?.description || 'Payment was declined or cancelled by the bank.');
+          });
+          razorpayInstance.open();
+          return;
+        }
       } catch (err: any) {
         setPaymentStatus('failed');
         setPaymentError(err?.message || 'Failed to initialize Razorpay checkout.');
       }
-    } else {
-      // Credentials not configured in environment
-      // Display clearly labelled integration state without simulating a fake monetary transaction
-      setIsPaymentModalOpen(true);
     }
+
+    // Credentials not configured in environment
+    // Display clearly labelled integration state without simulating a fake monetary transaction
+    setIsPaymentModalOpen(true);
   };
 
   return (

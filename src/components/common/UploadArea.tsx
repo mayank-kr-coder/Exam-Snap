@@ -1,5 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Camera, ShieldCheck, AlertTriangle, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Camera, ShieldCheck, AlertTriangle, FileText, Sparkles } from 'lucide-react';
+import { 
+  createSamplePassportPhotoBlob, 
+  createSampleSignatureBlob, 
+  createSampleThumbprintBlob 
+} from '../../utils/sampleImages';
 
 interface UploadAreaProps {
   onFileSelect: (file: File) => void;
@@ -9,6 +14,7 @@ interface UploadAreaProps {
   label?: string;
   subLabel?: string;
   isPdf?: boolean;
+  sampleType?: 'photo' | 'signature' | 'thumb';
 }
 
 export const UploadArea: React.FC<UploadAreaProps> = ({
@@ -18,7 +24,8 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
   maxSizeMb = 15,
   label = 'Choose file or drag & drop here',
   subLabel = 'Supports JPG, PNG, WEBP (Max 15MB)',
-  isPdf = false
+  isPdf = false,
+  sampleType = 'photo'
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,14 +34,12 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
   const validateAndPassFile = (file: File) => {
     setErrorMessage(null);
 
-    // Validate size
     const maxSizeBytes = maxSizeMb * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       setErrorMessage(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed is ${maxSizeMb}MB.`);
       return;
     }
 
-    // Validate extension
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (isPdf) {
       if (ext !== 'pdf' && file.type !== 'application/pdf') {
@@ -72,6 +77,20 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       validateAndPassFile(e.target.files[0]);
+    }
+  };
+
+  const handleLoadSample = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (sampleType === 'signature') {
+      const sample = await createSampleSignatureBlob();
+      validateAndPassFile(sample);
+    } else if (sampleType === 'thumb') {
+      const sample = await createSampleThumbprintBlob();
+      validateAndPassFile(sample);
+    } else {
+      const sample = await createSamplePassportPhotoBlob();
+      validateAndPassFile(sample);
     }
   };
 
@@ -118,8 +137,20 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           {!isPdf && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
               <Camera className="w-3.5 h-3.5" />
-              Capture with Camera
+              Camera
             </span>
+          )}
+
+          {!isPdf && (
+            <button
+              type="button"
+              onClick={handleLoadSample}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-saffron/20 hover:bg-saffron/30 text-navy-900 border border-saffron/50 shadow-xs transition"
+              title="Test immediately with demo image"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-saffron-dark" />
+              <span>Try Demo Sample</span>
+            </button>
           )}
         </div>
       </div>

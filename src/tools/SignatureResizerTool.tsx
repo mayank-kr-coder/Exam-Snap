@@ -170,6 +170,7 @@ export const SignatureResizerTool: React.FC = () => {
         <div className="max-w-2xl mx-auto py-8">
           <UploadArea
             onFileSelect={handleFileSelect}
+            sampleType="signature"
             label="Upload Candidate Signature Photo"
             subLabel="Capture signature written in black or blue ink on white paper"
           />
