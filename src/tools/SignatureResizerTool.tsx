@@ -28,7 +28,7 @@ export const SignatureResizerTool: React.FC = () => {
 
   const [widthPx, setWidthPx] = useState<number>(spec?.requiredWidthPx || 472);
   const [heightPx, setHeightPx] = useState<number>(spec?.requiredHeightPx || 236);
-  const [lockAspect, setLockAspect] = useState<boolean>(true);
+  const [lockAspect, setLockAspect] = useState<boolean>(false);
 
   const [cropRect, setCropRect] = useState<CropRect>({ x: 0, y: 0, width: 100, height: 100 });
   const [adjustments, setAdjustments] = useState<ImageAdjustments>({

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { CropRect } from '../../utils/imageProcessing';
-import { RotateCw, ZoomIn, ZoomOut, Maximize2, UserCheck } from 'lucide-react';
+import { RotateCw, Maximize2, UserCheck, Lock, Unlock, ArrowLeftRight } from 'lucide-react';
 
 interface CanvasCropperProps {
   image: HTMLImageElement;
@@ -14,10 +14,10 @@ interface CanvasCropperProps {
 export const CanvasCropper: React.FC<CanvasCropperProps> = ({
   image,
   aspectRatio,
-  lockAspect = true,
-  showFaceGuide = true,
+  lockAspect = false,
+  showFaceGuide = false,
   onCropChange,
-  minCropSize = 40
+  minCropSize = 30
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,8 +25,14 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
   // Crop box in natural image coordinates
   const [crop, setCrop] = useState<CropRect>({ x: 0, y: 0, width: 100, height: 100 });
   const [displayScale, setDisplayScale] = useState<number>(1);
-  const [rotation, setRotation] = useState<number>(0);
   const [showOval, setShowOval] = useState<boolean>(showFaceGuide);
+  const [isLocked, setIsLocked] = useState<boolean>(lockAspect);
+  const [cursorStyle, setCursorStyle] = useState<string>('default');
+
+  // Sync external lockAspect prop when changed
+  useEffect(() => {
+    setIsLocked(lockAspect);
+  }, [lockAspect]);
 
   // Interaction dragging state
   const dragRef = useRef<{
@@ -43,17 +49,17 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     startCrop: { x: 0, y: 0, width: 0, height: 0 }
   });
 
-  // Initialize crop centered in image with target aspect ratio
+  // Initialize crop centered in image
   useEffect(() => {
     if (!image) return;
 
     const imgW = image.naturalWidth || image.width;
     const imgH = image.naturalHeight || image.height;
 
-    let targetW = imgW * 0.85;
+    let targetW = imgW * 0.9;
     let targetH = imgH * 0.85;
 
-    if (aspectRatio) {
+    if (isLocked && aspectRatio) {
       if (targetW / targetH > aspectRatio) {
         targetW = targetH * aspectRatio;
       } else {
@@ -70,7 +76,7 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
 
     setCrop(initialCrop);
     onCropChange(initialCrop);
-  }, [image, aspectRatio]);
+  }, [image]);
 
   // Render preview canvas and crop overlay
   const draw = useCallback(() => {
@@ -110,7 +116,7 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     const ch = crop.height * scale;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)'; // subtle dimming
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.60)'; // dimming
     ctx.beginPath();
     ctx.rect(0, 0, canvasW, canvasH);
     ctx.rect(cx + cw, cy, -cw, ch); // cut out inner crop box (counter-clockwise)
@@ -118,11 +124,11 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
 
     // Crop box border
     ctx.strokeStyle = '#FF9933'; // Saffron accent
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.strokeRect(cx, cy, cw, ch);
 
     // Rule of thirds subtle grid inside crop box
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.40)';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
 
@@ -142,10 +148,9 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
 
     // Face oval guideline if enabled
     if (showOval) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      // Ellipse roughly where face should be
       const ovalCx = cx + cw / 2;
       const ovalCy = cy + ch * 0.44;
       const ovalRx = cw * 0.28;
@@ -153,35 +158,66 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
       ctx.ellipse(ovalCx, ovalCy, ovalRx, ovalRy, 0, 0, 2 * Math.PI);
       ctx.stroke();
 
-      // Eye-level crosshair guideline
-      ctx.strokeStyle = 'rgba(255, 153, 51, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 153, 51, 0.7)';
       ctx.beginPath();
       ctx.moveTo(ovalCx - ovalRx * 0.6, ovalCy - ovalRy * 0.15);
       ctx.lineTo(ovalCx + ovalRx * 0.6, ovalCy - ovalRy * 0.15);
       ctx.stroke();
     }
 
-    // Corner and edge handles
-    const handleSize = 9;
+    // Corner handles (Squares)
+    const cornerSize = 11;
     ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = '#14213D';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
 
-    const handles = [
+    const corners = [
       { x: cx, y: cy },
       { x: cx + cw, y: cy },
       { x: cx + cw, y: cy + ch },
-      { x: cx, y: cy + ch },
-      { x: cx + cw / 2, y: cy },
-      { x: cx + cw, y: cy + ch / 2 },
-      { x: cx + cw / 2, y: cy + ch },
-      { x: cx, y: cy + ch / 2 }
+      { x: cx, y: cy + ch }
     ];
 
-    handles.forEach((h) => {
-      ctx.fillRect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
-      ctx.strokeRect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
+    corners.forEach((h) => {
+      ctx.fillRect(h.x - cornerSize / 2, h.y - cornerSize / 2, cornerSize, cornerSize);
+      ctx.strokeRect(h.x - cornerSize / 2, h.y - cornerSize / 2, cornerSize, cornerSize);
     });
+
+    // Side handles (Pill shapes specially styled for easy drag/stretch)
+    // Left (W) and Right (E) side handles: Vertical pill for width stretching
+    const sidePillW = 8;
+    const sidePillH = 22;
+
+    // Right handle (East)
+    ctx.fillStyle = '#FF9933';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(cx + cw - sidePillW / 2, cy + ch / 2 - sidePillH / 2, sidePillW, sidePillH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Left handle (West)
+    ctx.beginPath();
+    ctx.roundRect(cx - sidePillW / 2, cy + ch / 2 - sidePillH / 2, sidePillW, sidePillH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top (N) and Bottom (S) handles: Horizontal pill for height stretching
+    const topPillW = 22;
+    const topPillH = 8;
+
+    // Top handle (North)
+    ctx.beginPath();
+    ctx.roundRect(cx + cw / 2 - topPillW / 2, cy - topPillH / 2, topPillW, topPillH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bottom handle (South)
+    ctx.beginPath();
+    ctx.roundRect(cx + cw / 2 - topPillW / 2, cy + ch - topPillH / 2, topPillW, topPillH, 4);
+    ctx.fill();
+    ctx.stroke();
 
     ctx.restore();
   }, [image, crop, showOval]);
@@ -190,7 +226,51 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     draw();
   }, [draw]);
 
-  // Pointer event handlers for touch and desktop mouse
+  // Helper to determine which handle or region is at mouse (x, y)
+  const getHandleAt = (mouseX: number, mouseY: number) => {
+    const { x, y, width: w, height: h } = crop;
+    // Generous hit tolerance so touch and mouse are very easy to grab
+    const hitTol = Math.max(22, 22 / (displayScale || 1));
+
+    if (Math.hypot(mouseX - x, mouseY - y) < hitTol) return 'nw';
+    if (Math.hypot(mouseX - (x + w), mouseY - y) < hitTol) return 'ne';
+    if (Math.hypot(mouseX - (x + w), mouseY - (y + h)) < hitTol) return 'se';
+    if (Math.hypot(mouseX - x, mouseY - (y + h)) < hitTol) return 'sw';
+
+    // Width drag handles (East and West)
+    if (Math.hypot(mouseX - (x + w), mouseY - (y + h / 2)) < hitTol) return 'e';
+    if (Math.hypot(mouseX - x, mouseY - (y + h / 2)) < hitTol) return 'w';
+
+    // Height drag handles (North and South)
+    if (Math.hypot(mouseX - (x + w / 2), mouseY - y) < hitTol) return 'n';
+    if (Math.hypot(mouseX - (x + w / 2), mouseY - (y + h)) < hitTol) return 's';
+
+    // Inside box -> move
+    if (mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h) {
+      return 'move';
+    }
+
+    return null;
+  };
+
+  // Hover cursor updates
+  const handlePointerHover = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (dragRef.current.isDragging || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / displayScale;
+    const mouseY = (e.clientY - rect.top) / displayScale;
+
+    const handle = getHandleAt(mouseX, mouseY);
+    if (handle === 'e' || handle === 'w') setCursorStyle('ew-resize');
+    else if (handle === 'n' || handle === 's') setCursorStyle('ns-resize');
+    else if (handle === 'nw' || handle === 'se') setCursorStyle('nwse-resize');
+    else if (handle === 'ne' || handle === 'sw') setCursorStyle('nesw-resize');
+    else if (handle === 'move') setCursorStyle('move');
+    else setCursorStyle('default');
+  };
+
+  // Pointer Down
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas || displayScale <= 0) return;
@@ -199,20 +279,7 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     const mouseX = (e.clientX - rect.left) / displayScale;
     const mouseY = (e.clientY - rect.top) / displayScale;
 
-    // Check hit on corner or edge handles first
-    const hitTolerance = 18 / displayScale;
-
-    const { x, y, width: w, height: h } = crop;
-
-    let dragType: typeof dragRef.current.dragType = null;
-
-    if (Math.hypot(mouseX - x, mouseY - y) < hitTolerance) dragType = 'nw';
-    else if (Math.hypot(mouseX - (x + w), mouseY - y) < hitTolerance) dragType = 'ne';
-    else if (Math.hypot(mouseX - (x + w), mouseY - (y + h)) < hitTolerance) dragType = 'se';
-    else if (Math.hypot(mouseX - x, mouseY - (y + h)) < hitTolerance) dragType = 'sw';
-    else if (mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h) {
-      dragType = 'move';
-    }
+    const dragType = getHandleAt(mouseX, mouseY);
 
     if (dragType) {
       dragRef.current = {
@@ -226,8 +293,12 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     }
   };
 
+  // Pointer Move (Dragging)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragRef.current.isDragging || !image) return;
+    if (!dragRef.current.isDragging || !image) {
+      handlePointerHover(e);
+      return;
+    }
 
     const canvas = canvasRef.current;
     if (!canvas || displayScale <= 0) return;
@@ -248,60 +319,117 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     if (dragType === 'move') {
       newCrop.x = Math.max(0, Math.min(imgW - startCrop.width, startCrop.x + dx));
       newCrop.y = Math.max(0, Math.min(imgH - startCrop.height, startCrop.y + dy));
-    } else if (dragType === 'se') {
-      let newW = Math.max(minCropSize, startCrop.width + dx);
-      let newH = Math.max(minCropSize, startCrop.height + dy);
-      if (lockAspect && aspectRatio) {
+    } 
+    // East handle -> stretch width to the right (khinch ke bada karna)
+    else if (dragType === 'e') {
+      const maxW = imgW - startCrop.x;
+      const newW = Math.max(minCropSize, Math.min(maxW, startCrop.width + dx));
+      newCrop.width = Math.round(newW);
+      if (isLocked && aspectRatio) {
+        const newH = Math.min(imgH, newW / aspectRatio);
+        newCrop.height = Math.round(newH);
+        newCrop.y = Math.max(0, Math.min(imgH - newCrop.height, Math.round(startCrop.y - (newH - startCrop.height) / 2)));
+      }
+    } 
+    // West handle -> stretch width to the left
+    else if (dragType === 'w') {
+      const maxDx = startCrop.width - minCropSize;
+      const clampedDx = Math.max(-startCrop.x, Math.min(maxDx, dx));
+      newCrop.x = Math.round(startCrop.x + clampedDx);
+      newCrop.width = Math.round(startCrop.width - clampedDx);
+      if (isLocked && aspectRatio) {
+        const newH = Math.min(imgH, newCrop.width / aspectRatio);
+        newCrop.height = Math.round(newH);
+        newCrop.y = Math.max(0, Math.min(imgH - newCrop.height, Math.round(startCrop.y - (newH - startCrop.height) / 2)));
+      }
+    } 
+    // South handle -> stretch height down
+    else if (dragType === 's') {
+      const maxH = imgH - startCrop.y;
+      const newH = Math.max(minCropSize, Math.min(maxH, startCrop.height + dy));
+      newCrop.height = Math.round(newH);
+      if (isLocked && aspectRatio) {
+        const newW = Math.min(imgW, newH * aspectRatio);
+        newCrop.width = Math.round(newW);
+        newCrop.x = Math.max(0, Math.min(imgW - newCrop.width, Math.round(startCrop.x - (newW - startCrop.width) / 2)));
+      }
+    } 
+    // North handle -> stretch height up
+    else if (dragType === 'n') {
+      const maxDy = startCrop.height - minCropSize;
+      const clampedDy = Math.max(-startCrop.y, Math.min(maxDy, dy));
+      newCrop.y = Math.round(startCrop.y + clampedDy);
+      newCrop.height = Math.round(startCrop.height - clampedDy);
+      if (isLocked && aspectRatio) {
+        const newW = Math.min(imgW, newCrop.height * aspectRatio);
+        newCrop.width = Math.round(newW);
+        newCrop.x = Math.max(0, Math.min(imgW - newCrop.width, Math.round(startCrop.x - (newW - startCrop.width) / 2)));
+      }
+    } 
+    // Corner handles
+    else if (dragType === 'se') {
+      let newW = Math.max(minCropSize, Math.min(imgW - startCrop.x, startCrop.width + dx));
+      let newH = Math.max(minCropSize, Math.min(imgH - startCrop.y, startCrop.height + dy));
+      if (isLocked && aspectRatio) {
         newH = newW / aspectRatio;
-      }
-      if (startCrop.x + newW > imgW) {
-        newW = imgW - startCrop.x;
-        if (lockAspect && aspectRatio) newH = newW / aspectRatio;
-      }
-      if (startCrop.y + newH > imgH) {
-        newH = imgH - startCrop.y;
-        if (lockAspect && aspectRatio) newW = newH * aspectRatio;
+        if (startCrop.y + newH > imgH) {
+          newH = imgH - startCrop.y;
+          newW = newH * aspectRatio;
+        }
       }
       newCrop.width = Math.round(newW);
       newCrop.height = Math.round(newH);
-    } else if (dragType === 'nw') {
-      let newW = Math.max(minCropSize, startCrop.width - dx);
-      let newH = Math.max(minCropSize, startCrop.height - dy);
-      if (lockAspect && aspectRatio) {
+    } 
+    else if (dragType === 'sw') {
+      const maxDx = startCrop.width - minCropSize;
+      const clampedDx = Math.max(-startCrop.x, Math.min(maxDx, dx));
+      let newW = startCrop.width - clampedDx;
+      let newH = Math.max(minCropSize, Math.min(imgH - startCrop.y, startCrop.height + dy));
+      if (isLocked && aspectRatio) {
         newH = newW / aspectRatio;
+        if (startCrop.y + newH > imgH) {
+          newH = imgH - startCrop.y;
+          newW = newH * aspectRatio;
+        }
       }
-      const newX = startCrop.x + (startCrop.width - newW);
-      const newY = startCrop.y + (startCrop.height - newH);
-      if (newX >= 0 && newY >= 0) {
-        newCrop.x = Math.round(newX);
-        newCrop.y = Math.round(newY);
-        newCrop.width = Math.round(newW);
-        newCrop.height = Math.round(newH);
-      }
-    } else if (dragType === 'ne') {
-      let newW = Math.max(minCropSize, startCrop.width + dx);
-      let newH = Math.max(minCropSize, startCrop.height - dy);
-      if (lockAspect && aspectRatio) {
+      newCrop.x = Math.round(startCrop.x + startCrop.width - newW);
+      newCrop.width = Math.round(newW);
+      newCrop.height = Math.round(newH);
+    } 
+    else if (dragType === 'ne') {
+      let newW = Math.max(minCropSize, Math.min(imgW - startCrop.x, startCrop.width + dx));
+      const maxDy = startCrop.height - minCropSize;
+      const clampedDy = Math.max(-startCrop.y, Math.min(maxDy, dy));
+      let newH = startCrop.height - clampedDy;
+      if (isLocked && aspectRatio) {
         newH = newW / aspectRatio;
+        if (startCrop.y + startCrop.height - newH < 0) {
+          newH = startCrop.y + startCrop.height;
+          newW = newH * aspectRatio;
+        }
       }
-      const newY = startCrop.y + (startCrop.height - newH);
-      if (startCrop.x + newW <= imgW && newY >= 0) {
-        newCrop.y = Math.round(newY);
-        newCrop.width = Math.round(newW);
-        newCrop.height = Math.round(newH);
-      }
-    } else if (dragType === 'sw') {
-      let newW = Math.max(minCropSize, startCrop.width - dx);
-      let newH = Math.max(minCropSize, startCrop.height + dy);
-      if (lockAspect && aspectRatio) {
+      newCrop.y = Math.round(startCrop.y + startCrop.height - newH);
+      newCrop.width = Math.round(newW);
+      newCrop.height = Math.round(newH);
+    } 
+    else if (dragType === 'nw') {
+      const maxDx = startCrop.width - minCropSize;
+      const clampedDx = Math.max(-startCrop.x, Math.min(maxDx, dx));
+      let newW = startCrop.width - clampedDx;
+      const maxDy = startCrop.height - minCropSize;
+      const clampedDy = Math.max(-startCrop.y, Math.min(maxDy, dy));
+      let newH = startCrop.height - clampedDy;
+      if (isLocked && aspectRatio) {
         newH = newW / aspectRatio;
+        if (startCrop.y + startCrop.height - newH < 0) {
+          newH = startCrop.y + startCrop.height;
+          newW = newH * aspectRatio;
+        }
       }
-      const newX = startCrop.x + (startCrop.width - newW);
-      if (newX >= 0 && startCrop.y + newH <= imgH) {
-        newCrop.x = Math.round(newX);
-        newCrop.width = Math.round(newW);
-        newCrop.height = Math.round(newH);
-      }
+      newCrop.x = Math.round(startCrop.x + startCrop.width - newW);
+      newCrop.y = Math.round(startCrop.y + startCrop.height - newH);
+      newCrop.width = Math.round(newW);
+      newCrop.height = Math.round(newH);
     }
 
     setCrop(newCrop);
@@ -318,32 +446,41 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     }
   };
 
+  // 1-Click Stretch to Full Width
+  const stretchToFullWidth = () => {
+    if (!image) return;
+    const imgW = image.naturalWidth || image.width;
+    const fullWidthCrop: CropRect = {
+      x: 0,
+      y: crop.y,
+      width: imgW,
+      height: crop.height
+    };
+    setCrop(fullWidthCrop);
+    onCropChange(fullWidthCrop);
+  };
+
+  // Reset to full image
   const resetCropToFull = () => {
     if (!image) return;
     const imgW = image.naturalWidth || image.width;
     const imgH = image.naturalHeight || image.height;
-    let targetW = imgW;
-    let targetH = imgH;
-    if (aspectRatio) {
-      if (targetW / targetH > aspectRatio) targetW = targetH * aspectRatio;
-      else targetH = targetW / aspectRatio;
-    }
     const fullCrop: CropRect = {
-      x: Math.round((imgW - targetW) / 2),
-      y: Math.round((imgH - targetH) / 2),
-      width: Math.round(targetW),
-      height: Math.round(targetH)
+      x: 0,
+      y: 0,
+      width: imgW,
+      height: imgH
     };
     setCrop(fullCrop);
     onCropChange(fullCrop);
   };
 
   return (
-    <div className="flex flex-col items-center w-full space-y-3">
+    <div className="flex flex-col items-center w-full space-y-2.5">
       {/* Interactive Canvas Viewport */}
       <div
         ref={containerRef}
-        className="w-full flex justify-center items-center bg-gray-950/80 rounded-2xl p-2 sm:p-4 border border-gray-200 overflow-hidden shadow-inner select-none relative"
+        className="w-full flex justify-center items-center bg-gray-950/85 rounded-2xl p-2 sm:p-4 border border-gray-200 overflow-hidden shadow-inner select-none relative"
       >
         <canvas
           ref={canvasRef}
@@ -351,30 +488,67 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="touch-none cursor-move rounded-lg max-w-full"
-          style={{ imageRendering: 'auto' }}
+          className="touch-none rounded-lg max-w-full"
+          style={{ cursor: cursorStyle, imageRendering: 'auto' }}
         />
+      </div>
+
+      {/* Helper guidance note */}
+      <div className="w-full text-center">
+        <p className="text-[11px] text-gray-500 font-medium">
+          💡 <span className="font-semibold text-navy">Width bada karne ke liye:</span> Orange side handles (↔) ko pakad kar right/left kheenche, ya neeche <span className="text-saffron-dark font-semibold">"↔ Full Width"</span> button dabayein.
+        </p>
       </div>
 
       {/* Control bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 w-full px-1 text-xs text-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="font-mono bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-mono bg-white px-2 py-1 rounded border border-gray-200 shadow-xs font-semibold text-navy">
             Crop: {crop.width} × {crop.height} px
           </span>
-          {aspectRatio && (
-            <span className="text-gray-500 font-medium hidden sm:inline">
-              Locked ({aspectRatio.toFixed(2)} : 1)
-            </span>
-          )}
+
+          {/* 1-Click Stretch Width Button */}
+          <button
+            type="button"
+            onClick={stretchToFullWidth}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-saffron/40 bg-saffron/15 hover:bg-saffron/25 text-navy font-bold transition active:scale-95"
+            title="Stretch crop box to full image width"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5 text-saffron-dark" />
+            <span>↔ Full Width (Poora Kheechein)</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {/* Lock / Unlock ratio toggle */}
+          <button
+            type="button"
+            onClick={() => setIsLocked(!isLocked)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition ${
+              isLocked
+                ? 'bg-navy/10 border-navy/30 text-navy font-bold'
+                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+            title="Toggle aspect ratio lock"
+          >
+            {isLocked ? (
+              <>
+                <Lock className="w-3.5 h-3.5 text-navy" />
+                <span>Locked Ratio</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="w-3.5 h-3.5 text-gray-500" />
+                <span>Free Width & Height</span>
+              </>
+            )}
+          </button>
+
           {showFaceGuide && (
             <button
               type="button"
               onClick={() => setShowOval(!showOval)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded border transition ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition ${
                 showOval
                   ? 'bg-saffron/10 border-saffron text-saffron-dark font-medium'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -389,11 +563,11 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
           <button
             type="button"
             onClick={resetCropToFull}
-            className="flex items-center gap-1 px-2.5 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition"
-            title="Reset crop to center"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition"
+            title="Reset crop to entire image"
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span>Reset</span>
+            <span>Fit All</span>
           </button>
         </div>
       </div>
