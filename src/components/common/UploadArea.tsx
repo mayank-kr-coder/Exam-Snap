@@ -21,23 +21,29 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
   onFileSelect,
   accept = 'image/jpeg,image/png,image/webp,image/jpg',
   allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'],
-  maxSizeMb = 15,
+  maxSizeMb = 35,
   label = 'Choose file or drag & drop here',
-  subLabel = 'Supports JPG, PNG, WEBP (Max 15MB)',
+  subLabel = 'Supports JPG, PNG, WEBP (Max 35MB • Auto-Memory Protected)',
   isPdf = false,
   sampleType = 'photo'
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateAndPassFile = (file: File) => {
     setErrorMessage(null);
+    setWarningMessage(null);
 
     const maxSizeBytes = maxSizeMb * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       setErrorMessage(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed is ${maxSizeMb}MB.`);
       return;
+    }
+
+    if (file.size > 30 * 1024 * 1024) {
+      setWarningMessage(`High-resolution image (${(file.size / (1024 * 1024)).toFixed(1)} MB). Memory downscaling protection enabled.`);
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -154,6 +160,13 @@ export const UploadArea: React.FC<UploadAreaProps> = ({
           )}
         </div>
       </div>
+
+      {warningMessage && (
+        <div className="flex items-center gap-2 p-2.5 text-xs text-amber-800 bg-amber-50 border border-amber-300 rounded-lg animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <span>{warningMessage}</span>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="flex items-center gap-2 p-2.5 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg animate-in fade-in">

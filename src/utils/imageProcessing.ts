@@ -26,10 +26,117 @@ export interface ImageAdjustments {
   targetBgColor?: string; // e.g. '#ffffff' or '#f0f4f8'
 }
 
+export interface ImageLoadOptions {
+  maxDimension?: number; // Default 4096 px (safe mobile/desktop canvas limit)
+  maxFileSizeMb?: number; // Default 30 MB
+  maxPixelDimensionWarning?: number; // Default 8000 px
+  onWarning?: (warning: string) => void;
+}
+
+export interface ProtectedImageResult {
+  image: HTMLImageElement;
+  originalWidth: number;
+  originalHeight: number;
+  width: number;
+  height: number;
+  isDownscaled: boolean;
+  warning?: string;
+}
+
 /**
- * Loads an image file or object URL safely into an HTMLImageElement
+ * Loads an image file, blob, or URL safely with memory protection:
+ * - Detects images > 30 MB and dimensions > 8000x8000
+ * - Downscales large images to safe processing dimensions (default max 4096px)
+ * - Uses createImageBitmap where supported with fallback
+ * - Preserves aspect ratio and prevents mobile/canvas memory crashes
  */
-export function loadImage(source: File | Blob | string): Promise<HTMLImageElement> {
+export async function loadImage(
+  source: File | Blob | string,
+  options: ImageLoadOptions = {}
+): Promise<HTMLImageElement> {
+  const maxDim = options.maxDimension || 4096;
+  const maxMb = options.maxFileSizeMb || 30;
+  let warningMessage: string | undefined;
+
+  // 1. Check file size if source is File/Blob
+  if (source instanceof Blob) {
+    const sizeMb = source.size / (1024 * 1024);
+    if (sizeMb > maxMb) {
+      warningMessage = `Large image detected (${sizeMb.toFixed(1)} MB > ${maxMb} MB). Memory protection downscaling applied.`;
+    }
+  }
+
+  // 2. High performance path using createImageBitmap (supported in modern browsers)
+  if (
+    typeof window !== 'undefined' &&
+    'createImageBitmap' in window &&
+    source instanceof Blob
+  ) {
+    try {
+      const bitmap = await createImageBitmap(source);
+      const origW = bitmap.width;
+      const origH = bitmap.height;
+
+      if (origW > 8000 || origH > 8000) {
+        warningMessage = `Dimensions (${origW}x${origH}px) exceed 8000px. Downscaled safely to prevent mobile browser crashes.`;
+      }
+
+      if (origW > maxDim || origH > maxDim) {
+        const scale = Math.min(maxDim / origW, maxDim / origH);
+        const targetW = Math.round(origW * scale);
+        const targetH = Math.round(origH * scale);
+        bitmap.close();
+
+        const resizedBitmap = await createImageBitmap(source, {
+          resizeWidth: targetW,
+          resizeHeight: targetH,
+          resizeQuality: 'high'
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(resizedBitmap, 0, 0);
+          resizedBitmap.close();
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = canvas.toDataURL('image/jpeg', 0.95);
+          await new Promise<void>((res) => { img.onload = () => res(); });
+          (img as any).__originalWidth = origW;
+          (img as any).__originalHeight = origH;
+          (img as any).__isDownscaled = true;
+          (img as any).__warning = warningMessage;
+          if (warningMessage && options.onWarning) options.onWarning(warningMessage);
+          return img;
+        }
+      } else {
+        // Dimensions within safe limits
+        const canvas = document.createElement('canvas');
+        canvas.width = origW;
+        canvas.height = origH;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(bitmap, 0, 0);
+          bitmap.close();
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = canvas.toDataURL('image/jpeg', 0.98);
+          await new Promise<void>((res) => { img.onload = () => res(); });
+          (img as any).__originalWidth = origW;
+          (img as any).__originalHeight = origH;
+          (img as any).__isDownscaled = false;
+          if (warningMessage && options.onWarning) options.onWarning(warningMessage);
+          return img;
+        }
+      }
+    } catch {
+      // Fallback to Image loading if createImageBitmap encounters format limitations
+    }
+  }
+
+  // 3. Robust fallback using HTMLImageElement
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -43,17 +150,149 @@ export function loadImage(source: File | Blob | string): Promise<HTMLImageElemen
     }
 
     img.onload = () => {
-      if (objectUrl) {
-        // We clean up after image is decoded or keep it if needed
+      try {
+        const origW = img.naturalWidth || img.width;
+        const origH = img.naturalHeight || img.height;
+
+        if (origW > 8000 || origH > 8000) {
+          warningMessage = `Dimensions (${origW}x${origH}px) exceed 8000px. Downscaled safely to prevent memory allocation crashes.`;
+        }
+
+        if (origW > maxDim || origH > maxDim) {
+          const scale = Math.min(maxDim / origW, maxDim / origH);
+          const targetW = Math.round(origW * scale);
+          const targetH = Math.round(origH * scale);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+            const downscaledImg = new Image();
+            downscaledImg.crossOrigin = 'anonymous';
+            downscaledImg.src = canvas.toDataURL('image/jpeg', 0.95);
+            downscaledImg.onload = () => {
+              if (objectUrl) URL.revokeObjectURL(objectUrl);
+              (downscaledImg as any).__originalWidth = origW;
+              (downscaledImg as any).__originalHeight = origH;
+              (downscaledImg as any).__isDownscaled = true;
+              (downscaledImg as any).__warning = warningMessage;
+              if (warningMessage && options.onWarning) options.onWarning(warningMessage);
+              resolve(downscaledImg);
+            };
+            return;
+          }
+        }
+
+        if (objectUrl) {
+          // Keep URL valid for rendering
+        }
+        (img as any).__originalWidth = origW;
+        (img as any).__originalHeight = origH;
+        (img as any).__isDownscaled = false;
+        if (warningMessage && options.onWarning) options.onWarning(warningMessage);
+        resolve(img);
+      } catch (err) {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        resolve(img);
       }
-      resolve(img);
     };
 
-    img.onerror = (err) => {
+    img.onerror = () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       reject(new Error('Failed to load image. File may be corrupted or unsupported format.'));
     };
   });
+}
+
+/**
+ * Injects or updates standard JFIF APP0 300 DPI metadata into a JPEG Blob.
+ * Conforms to standard JFIF 1.02 specification.
+ */
+export async function injectJfifDpi(blob: Blob, dpi: number = 300): Promise<Blob> {
+  if (blob.type !== 'image/jpeg' && !blob.type.includes('jpeg')) {
+    return blob;
+  }
+
+  const buffer = await blob.arrayBuffer();
+  const view = new Uint8Array(buffer);
+
+  // Validate SOI marker (0xFF, 0xD8)
+  if (view.length < 4 || view[0] !== 0xFF || view[1] !== 0xD8) {
+    return blob;
+  }
+
+  const dpiInt = Math.max(72, Math.min(1200, Math.round(dpi)));
+  const dpiHi = (dpiInt >> 8) & 0xFF;
+  const dpiLo = dpiInt & 0xFF;
+
+  // Check if JFIF APP0 already exists at offset 2
+  if (
+    view[2] === 0xFF &&
+    view[3] === 0xE0 &&
+    view.length >= 18 &&
+    view[6] === 0x4A && // 'J'
+    view[7] === 0x46 && // 'F'
+    view[8] === 0x49 && // 'I'
+    view[9] === 0x46 && // 'F'
+    view[10] === 0x00   // 0
+  ) {
+    // APP0 exists: clone buffer and set units=1 (DPI) and density values
+    const updated = new Uint8Array(view);
+    updated[13] = 1; // 1 = dots per inch (DPI)
+    updated[14] = dpiHi;
+    updated[15] = dpiLo;
+    updated[16] = dpiHi;
+    updated[17] = dpiLo;
+    return new Blob([updated], { type: 'image/jpeg' });
+  }
+
+  // Otherwise, construct standard 18-byte JFIF APP0 block and insert after SOI (index 2)
+  const jfifSegment = new Uint8Array([
+    0xFF, 0xE0, // APP0 marker
+    0x00, 0x10, // Length (16 bytes including length bytes)
+    0x4A, 0x46, 0x49, 0x46, 0x00, // 'JFIF\0'
+    0x01, 0x02, // Version 1.02
+    0x01,       // Units: 1 = dots per inch (DPI)
+    dpiHi, dpiLo, // Xdensity
+    dpiHi, dpiLo, // Ydensity
+    0x00, 0x00  // Thumbnail size: 0x0
+  ]);
+
+  const output = new Uint8Array(view.length + jfifSegment.length);
+  output.set(view.subarray(0, 2), 0); // SOI
+  output.set(jfifSegment, 2);          // APP0
+  output.set(view.subarray(2), 2 + jfifSegment.length); // Remaining stream
+
+  return new Blob([output], { type: 'image/jpeg' });
+}
+
+/**
+ * Reads DPI metadata from a JPEG blob for verification and inspection
+ */
+export async function readJpegDpi(blob: Blob): Promise<{ dpiX: number; dpiY: number; units: number } | null> {
+  const buffer = await blob.arrayBuffer();
+  const view = new Uint8Array(buffer);
+  if (view.length < 18 || view[0] !== 0xFF || view[1] !== 0xD8) return null;
+
+  for (let i = 2; i < Math.min(view.length - 16, 250); i++) {
+    if (
+      view[i] === 0xFF &&
+      view[i + 1] === 0xE0 &&
+      view[i + 4] === 0x4A &&
+      view[i + 5] === 0x46 &&
+      view[i + 6] === 0x49 &&
+      view[i + 7] === 0x46 &&
+      view[i + 8] === 0x00
+    ) {
+      const units = view[i + 11];
+      const dpiX = (view[i + 12] << 8) | view[i + 13];
+      const dpiY = (view[i + 14] << 8) | view[i + 15];
+      return { dpiX, dpiY, units };
+    }
+  }
+  return null;
 }
 
 /**

@@ -118,6 +118,61 @@ const SEO_PAGES: Record<string, SEOCfg> = {
         a: 'RRB notifications strongly emphasize a solid white background. Avoid dark or colored backgrounds to prevent automatic rejection by the portal validation filter.'
       }
     ]
+  },
+  'ibps-banking-photo-resizer': {
+    title: 'IBPS Bank PO & Clerk Photo & Signature Resizer (200x230 px, 20KB-50KB)',
+    metaDesc: 'Resize passport photo (200x230 px, 20-50KB), signature (140x60 px, 10-20KB), and Left Thumb Impression for IBPS, SBI PO, Clerk, and RRB banking exams.',
+    headline: 'IBPS & SBI Banking Document Preparation Portal',
+    examName: 'Institute of Banking Personnel Selection (IBPS & SBI)',
+    toolType: 'passport',
+    presetId: 'ibps-po-clerk-sbi',
+    specs: {
+      photoDim: '200 × 230 pixels (4.5 cm × 3.5 cm)',
+      photoSize: '20 KB to 50 KB',
+      signDim: '140 × 60 pixels',
+      signSize: '10 KB to 20 KB',
+      format: 'JPEG / JPG only',
+      bgRequirement: 'Light colored or white background.'
+    },
+    rules: [
+      'Photo dimensions must be exactly 200 × 230 pixels.',
+      'Signature must be on white paper with black ink pen only.',
+      'Signatures in CAPITAL letters are NOT accepted.',
+      'Left Thumb Impression (LTI) on white paper with black or blue ink must be 10KB to 20KB.'
+    ],
+    faqs: [
+      {
+        q: 'What is the exact signature size for IBPS Clerk and PO?',
+        a: 'The signature must be 140 × 60 pixels, in JPG format, with file size strictly between 10 KB and 20 KB.'
+      }
+    ]
+  },
+  'state-psc-photo-resizer': {
+    title: 'State PSC & UPSSSC Photo Resizer (3.5x4.5 cm, 20KB-50KB) UPPSC, BPSC, MPPSC',
+    metaDesc: 'Resize photos and signatures for State Public Service Commissions (UPPSC, BPSC, MPPSC, UPSSSC, MPSC). Accurate 3.5x4.5 cm with signature strips.',
+    headline: 'State PSC & Subordinate Services Document Resizer',
+    examName: 'State Public Service Commissions (UPPSC, BPSC, UPSSSC, MPPSC)',
+    toolType: 'passport',
+    presetId: 'state-psc-uppsc-bpsc',
+    specs: {
+      photoDim: '3.5 cm × 4.5 cm (approx 413 × 531 pixels)',
+      photoSize: '20 KB to 50 KB',
+      signDim: '3.5 cm × 1.5 cm',
+      signSize: '10 KB to 20 KB',
+      format: 'JPEG / JPG',
+      bgRequirement: 'White or very light grey background.'
+    },
+    rules: [
+      'Clean passport photo without caps, sunglasses, or tinted lenses.',
+      'Both ears must be clearly visible with frontal pose.',
+      'Signature must be clearly legible and scanned without paper wrinkles.'
+    ],
+    faqs: [
+      {
+        q: 'Does UPSSSC require combined photo and signature?',
+        a: 'Some UPSSSC forms require a combined photo with signature placed below the photo in a 3.5cm x 6cm frame. You can prepare both files to exact dimensions on ExamSnap.'
+      }
+    ]
   }
 };
 

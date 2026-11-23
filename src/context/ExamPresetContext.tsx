@@ -7,6 +7,7 @@ interface ExamPresetContextType {
   presets: ExamPreset[];
   selectedPreset: ExamPreset | null;
   selectPresetById: (id: string | null) => void;
+  clearPresetSelection: () => void;
   updatePreset: (preset: ExamPreset) => void;
   addPreset: (preset: ExamPreset) => void;
   deletePreset: (id: string) => void;
@@ -16,12 +17,25 @@ interface ExamPresetContextType {
 
 const ExamPresetContext = createContext<ExamPresetContextType | undefined>(undefined);
 
+const ACTIVE_PRESET_STORAGE_KEY = 'examsnap_active_preset_id';
+
 export const ExamPresetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [presets, setPresets] = useState<ExamPreset[]>(() => {
     const saved = getSavedPresets();
     return saved && saved.length > 0 ? saved : DEFAULT_EXAM_PRESETS;
   });
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>('ssc-cgl-chsl');
+
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() => {
+    try {
+      const stored = localStorage.getItem(ACTIVE_PRESET_STORAGE_KEY);
+      if (stored !== null) {
+        return stored === '' ? null : stored;
+      }
+    } catch {
+      // Fallback
+    }
+    return 'ssc-cgl-chsl';
+  });
 
   useEffect(() => {
     if (presets.length === 0) {
@@ -35,6 +49,19 @@ export const ExamPresetProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const selectPresetById = (id: string | null) => {
     setSelectedPresetId(id);
+    try {
+      if (id) {
+        localStorage.setItem(ACTIVE_PRESET_STORAGE_KEY, id);
+      } else {
+        localStorage.removeItem(ACTIVE_PRESET_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  };
+
+  const clearPresetSelection = () => {
+    selectPresetById(null);
   };
 
   const updatePreset = (updated: ExamPreset) => {
@@ -69,6 +96,7 @@ export const ExamPresetProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         presets,
         selectedPreset,
         selectPresetById,
+        clearPresetSelection,
         updatePreset,
         addPreset,
         deletePreset,

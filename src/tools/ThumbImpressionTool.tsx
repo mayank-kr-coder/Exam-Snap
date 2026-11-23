@@ -4,6 +4,7 @@ import { CanvasCropper } from '../components/editor/CanvasCropper';
 import { SignatureControls } from '../components/editor/SignatureControls';
 import { CompressionControls } from '../components/editor/CompressionControls';
 import { DownloadButton } from '../components/common/DownloadButton';
+import { MobileStickyActionBar } from '../components/common/MobileStickyActionBar';
 import { SEOHead } from '../components/common/SEOHead';
 import { DimensionControls } from '../components/editor/DimensionControls';
 import { loadImage, processImageToCanvas, CropRect, ImageAdjustments } from '../utils/imageProcessing';
@@ -89,8 +90,20 @@ export const ThumbImpressionTool: React.FC = () => {
     setPreviewUrl(null);
   };
 
+  const handleDownloadTrigger = () => {
+    if (!result?.blob) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'thumb_impression_ready.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-6">
       <SEOHead
         title="Thumb Impression Resizer (LTI) - 10KB to 20KB for Banking & Govt Exams"
         description="Format and resize Left Thumb Impression (LTI) for IBPS, SBI, NTA NEET, JEE and Railway exams. Clean ink ridges, whiten paper, and compress to target KB."
@@ -226,6 +239,19 @@ export const ThumbImpressionTool: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {sourceImage && result && (
+        <MobileStickyActionBar
+          currentSizeKb={result.sizeKb}
+          targetRangeLabel={`${minKb} – ${maxKb} KB`}
+          onDownload={handleDownloadTrigger}
+          onReset={resetAll}
+          isDownloadDisabled={!result.blob}
+          downloadLabel="Download JPG"
+          isWithinTarget={result.isWithinTarget}
+          mimeLabel="JPG (300 DPI)"
+        />
       )}
     </div>
   );

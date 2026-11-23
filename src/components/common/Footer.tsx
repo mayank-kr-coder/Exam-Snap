@@ -87,12 +87,12 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/presets" className="hover:text-saffron transition">
+                <Link to="/tools/ibps-banking-photo-resizer" className="hover:text-saffron transition">
                   IBPS PO & SBI Bank Uploads
                 </Link>
               </li>
               <li>
-                <Link to="/presets" className="hover:text-saffron transition">
+                <Link to="/tools/state-psc-photo-resizer" className="hover:text-saffron transition">
                   State PSC / UPSSSC / BPSC
                 </Link>
               </li>

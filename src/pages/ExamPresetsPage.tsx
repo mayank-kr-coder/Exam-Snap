@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useExamPresets } from '../context/ExamPresetContext';
 import { SEOHead } from '../components/common/SEOHead';
 import { 
@@ -16,8 +16,15 @@ import {
 export const ExamPresetsPage: React.FC = () => {
   const { presets, selectPresetById, selectedPreset } = useExamPresets();
   const navigate = useNavigate();
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get('category') || 'all';
+  const [filterCategory, setFilterCategory] = useState<string>(initialCategory);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) setFilterCategory(cat);
+  }, [searchParams]);
 
   const filteredPresets = presets.filter((p) => {
     const matchesCat = filterCategory === 'all' || p.category === filterCategory;

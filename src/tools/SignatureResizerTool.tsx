@@ -6,6 +6,7 @@ import { SignatureControls } from '../components/editor/SignatureControls';
 import { CompressionControls } from '../components/editor/CompressionControls';
 import { PresetSpecsBadge } from '../components/editor/PresetSpecsBadge';
 import { DownloadButton } from '../components/common/DownloadButton';
+import { MobileStickyActionBar } from '../components/common/MobileStickyActionBar';
 import { SEOHead } from '../components/common/SEOHead';
 import { DimensionControls } from '../components/editor/DimensionControls';
 import { BeforeAfterViewer } from '../components/editor/BeforeAfterViewer';
@@ -123,8 +124,20 @@ export const SignatureResizerTool: React.FC = () => {
 
   const aspectRatio = widthPx / heightPx;
 
+  const handleDownloadTrigger = () => {
+    if (!result?.blob) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedPreset?.shortCode || 'signature'}_ready.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-6">
       <SEOHead
         title="Signature Resizer (10KB - 20KB & Custom Dimensions)"
         description="Resize signature for SSC, UPSC, IBPS, Railways. Remove shadows, whiten background paper, and compress strictly between 10KB and 20KB."
@@ -317,6 +330,19 @@ export const SignatureResizerTool: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {sourceImage && result && (
+        <MobileStickyActionBar
+          currentSizeKb={result.sizeKb}
+          targetRangeLabel={`${minKb} – ${maxKb} KB`}
+          onDownload={handleDownloadTrigger}
+          onReset={resetAll}
+          isDownloadDisabled={!result.blob}
+          downloadLabel="Download JPG"
+          isWithinTarget={result.isWithinTarget}
+          mimeLabel="JPG (300 DPI)"
+        />
       )}
     </div>
   );

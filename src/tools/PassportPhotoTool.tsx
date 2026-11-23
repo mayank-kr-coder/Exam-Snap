@@ -7,6 +7,7 @@ import { BackgroundControls } from '../components/editor/BackgroundControls';
 import { CompressionControls } from '../components/editor/CompressionControls';
 import { PresetSpecsBadge } from '../components/editor/PresetSpecsBadge';
 import { DownloadButton } from '../components/common/DownloadButton';
+import { MobileStickyActionBar } from '../components/common/MobileStickyActionBar';
 import { SEOHead } from '../components/common/SEOHead';
 import { DimensionControls } from '../components/editor/DimensionControls';
 import { QualityCheckerBadge } from '../components/editor/QualityCheckerBadge';
@@ -174,8 +175,28 @@ export const PassportPhotoTool: React.FC = () => {
 
   const aspectRatio = widthPx / heightPx;
 
+  const handleDownloadTrigger = () => {
+    if (!result?.blob) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedPreset?.shortCode || 'photo'}_passport_ready.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const handleReset = () => {
+    setSourceImage(null);
+    setOriginalFile(null);
+    setOriginalUrl(null);
+    setPreviewUrl(null);
+    setResult(null);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-6">
       <SEOHead
         title="Passport Photo Resizer (3.5 x 4.5 cm / 20KB - 50KB)"
         description="Free online passport photograph resizer and compressor for SSC, UPSC, IBPS, RRB and state government exam application forms. 100% private offline."
@@ -458,6 +479,19 @@ export const PassportPhotoTool: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {sourceImage && result && (
+        <MobileStickyActionBar
+          currentSizeKb={result.sizeKb}
+          targetRangeLabel={`${minKb} – ${maxKb} KB`}
+          onDownload={handleDownloadTrigger}
+          onReset={handleReset}
+          isDownloadDisabled={!result.blob || isProcessing}
+          downloadLabel="Download JPG"
+          isWithinTarget={result.isWithinTarget}
+          mimeLabel="JPG (300 DPI)"
+        />
       )}
     </div>
   );

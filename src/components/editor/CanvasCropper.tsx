@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { CropRect } from '../../utils/imageProcessing';
-import { RotateCw, Maximize2, UserCheck, Lock, Unlock, ArrowLeftRight } from 'lucide-react';
+import { RotateCw, Maximize2, UserCheck, Lock, Unlock, ArrowLeftRight, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface CanvasCropperProps {
   image: HTMLImageElement;
@@ -48,6 +48,11 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     startY: 0,
     startCrop: { x: 0, y: 0, width: 0, height: 0 }
   });
+
+  // Touch and pinch tracking state
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartCropRef = useRef<CropRect | null>(null);
 
   // Initialize crop centered in image
   useEffect(() => {
@@ -275,6 +280,19 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     const canvas = canvasRef.current;
     if (!canvas || displayScale <= 0) return;
 
+    // Track active touch pointer
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Handle two-finger pinch gesture
+    if (activePointersRef.current.size === 2) {
+      const pts = Array.from(activePointersRef.current.values());
+      pinchStartDistRef.current = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      pinchStartCropRef.current = { ...crop };
+      dragRef.current.isDragging = false;
+      dragRef.current.dragType = null;
+      return;
+    }
+
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) / displayScale;
     const mouseY = (e.clientY - rect.top) / displayScale;
@@ -293,8 +311,42 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     }
   };
 
-  // Pointer Move (Dragging)
+  // Pointer Move (Dragging & Pinch-to-zoom)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // 1. Two-finger pinch-to-zoom processing
+    if (activePointersRef.current.size >= 2 && pinchStartDistRef.current && pinchStartCropRef.current && image) {
+      const pts = Array.from(activePointersRef.current.values());
+      const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const zoomRatio = currentDist / Math.max(10, pinchStartDistRef.current);
+
+      const imgW = image.naturalWidth || image.width;
+      const imgH = image.naturalHeight || image.height;
+      const startCrop = pinchStartCropRef.current;
+
+      let newW = startCrop.width / zoomRatio;
+      let newH = isLocked && aspectRatio ? newW / aspectRatio : startCrop.height / zoomRatio;
+
+      newW = Math.max(minCropSize, Math.min(imgW, newW));
+      newH = Math.max(minCropSize, Math.min(imgH, newH));
+
+      const centerX = startCrop.x + startCrop.width / 2;
+      const centerY = startCrop.y + startCrop.height / 2;
+      const newX = Math.max(0, Math.min(imgW - newW, Math.round(centerX - newW / 2)));
+      const newY = Math.max(0, Math.min(imgH - newH, Math.round(centerY - newH / 2)));
+
+      const pinchCrop: CropRect = {
+        x: newX,
+        y: newY,
+        width: Math.round(newW),
+        height: Math.round(newH)
+      };
+      setCrop(pinchCrop);
+      onCropChange(pinchCrop);
+      return;
+    }
+
     if (!dragRef.current.isDragging || !image) {
       handlePointerHover(e);
       return;
@@ -437,13 +489,47 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    if (activePointersRef.current.size < 2) {
+      pinchStartDistRef.current = null;
+      pinchStartCropRef.current = null;
+    }
     dragRef.current.isDragging = false;
     dragRef.current.dragType = null;
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch (e) {
+    } catch {
       // ignore
     }
+  };
+
+  // Smooth Zoom In / Zoom Out step
+  const handleZoomStep = (factor: number) => {
+    if (!image) return;
+    const imgW = image.naturalWidth || image.width;
+    const imgH = image.naturalHeight || image.height;
+    const currentCrop = crop;
+
+    let newW = Math.max(minCropSize, Math.min(imgW, currentCrop.width * factor));
+    let newH = isLocked && aspectRatio ? newW / aspectRatio : Math.max(minCropSize, Math.min(imgH, currentCrop.height * factor));
+    if (newH > imgH) {
+      newH = imgH;
+      if (isLocked && aspectRatio) newW = newH * aspectRatio;
+    }
+
+    const centerX = currentCrop.x + currentCrop.width / 2;
+    const centerY = currentCrop.y + currentCrop.height / 2;
+    const newX = Math.max(0, Math.min(imgW - newW, Math.round(centerX - newW / 2)));
+    const newY = Math.max(0, Math.min(imgH - newH, Math.round(centerY - newH / 2)));
+
+    const updated: CropRect = {
+      x: newX,
+      y: newY,
+      width: Math.round(newW),
+      height: Math.round(newH)
+    };
+    setCrop(updated);
+    onCropChange(updated);
   };
 
   // 1-Click Stretch to Full Width
@@ -559,6 +645,28 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
               <span className="hidden xs:inline">Face Guide</span>
             </button>
           )}
+
+          {/* Zoom In & Out Controls */}
+          <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs">
+            <button
+              type="button"
+              onClick={() => handleZoomStep(0.9)}
+              className="p-1 hover:bg-gray-100 rounded text-gray-700 transition"
+              title="Zoom In (Crop closer)"
+              aria-label="Zoom in crop"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleZoomStep(1.1)}
+              className="p-1 hover:bg-gray-100 rounded text-gray-700 transition"
+              title="Zoom Out (Show more image)"
+              aria-label="Zoom out crop"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <button
             type="button"

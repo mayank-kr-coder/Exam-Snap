@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UploadArea } from '../components/common/UploadArea';
 import { DownloadButton } from '../components/common/DownloadButton';
+import { MobileStickyActionBar } from '../components/common/MobileStickyActionBar';
 import { SEOHead } from '../components/common/SEOHead';
 import { loadImage } from '../utils/imageProcessing';
 import { compressCanvasToTarget, canvasToBlob, CompressionResult } from '../utils/compression';
@@ -111,8 +112,20 @@ export const ImageCompressorTool: React.FC = () => {
     ? Math.max(0, Math.round(((originalSizeKb - result.sizeKb) / originalSizeKb) * 100))
     : 0;
 
+  const handleDownloadTrigger = () => {
+    if (!result?.blob) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${originalFile?.name.replace(/\.[^/.]+$/, '') || 'photo'}_compressed.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-6">
       <SEOHead
         title="Govt Exam Photo Compressor (Compress to 20KB, 50KB, 100KB)"
         description="Iterative client-side photo compressor for competitive exams. Accurately compress images down to 20KB–50KB without blurring or loss of facial features."
@@ -295,6 +308,19 @@ export const ImageCompressorTool: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {sourceImage && result && (
+        <MobileStickyActionBar
+          currentSizeKb={result.sizeKb}
+          targetRangeLabel={mode === 'target' ? `Target ${targetKb} KB` : `${Math.round(manualQuality * 100)}% Quality`}
+          onDownload={handleDownloadTrigger}
+          onReset={resetAll}
+          isDownloadDisabled={!result.blob || isProcessing}
+          downloadLabel="Download JPG"
+          isWithinTarget={result.isWithinTarget}
+          mimeLabel="JPG (300 DPI)"
+        />
       )}
     </div>
   );

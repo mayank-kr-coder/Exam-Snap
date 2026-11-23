@@ -1,3 +1,5 @@
+import { injectJfifDpi } from './imageProcessing';
+
 export interface CompressionResult {
   blob: Blob;
   sizeBytes: number;
@@ -12,14 +14,15 @@ export interface CompressionResult {
 }
 
 /**
- * Converts a Canvas to a JPEG Blob at a specific quality factor
+ * Converts a Canvas to a JPEG/PNG Blob at a specific quality factor with JFIF 300 DPI metadata injection
  */
-export function canvasToBlob(
+export async function canvasToBlob(
   canvas: HTMLCanvasElement,
   format: string = 'image/jpeg',
-  quality: number = 0.85
+  quality: number = 0.85,
+  dpi: number = 300
 ): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+  const rawBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (blob) {
@@ -32,6 +35,12 @@ export function canvasToBlob(
       quality
     );
   });
+
+  if ((format === 'image/jpeg' || format.includes('jpeg')) && dpi > 0) {
+    return injectJfifDpi(rawBlob, dpi);
+  }
+
+  return rawBlob;
 }
 
 /**
