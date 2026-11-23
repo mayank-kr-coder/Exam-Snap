@@ -3,7 +3,6 @@ import { DEFAULT_EXAM_PRESETS } from '../exam-presets/defaultPresets';
 
 const PRESETS_STORAGE_KEY = 'examsnap_presets_v1';
 const STATS_STORAGE_KEY = 'examsnap_usage_stats_v1';
-const ADMIN_AUTH_KEY = 'examsnap_admin_session_v1';
 const PRICING_STORAGE_KEY = 'examsnap_pricing_v1';
 const PREMIUM_UNLOCKED_KEY = 'examsnap_premium_unlocked_v1';
 
@@ -130,41 +129,6 @@ export function isPremiumUnlocked(): boolean {
 export function setPremiumUnlocked(unlocked: boolean): void {
   try {
     localStorage.setItem(PREMIUM_UNLOCKED_KEY, unlocked ? 'true' : 'false');
-  } catch (e) {
-    // Ignore
-  }
-}
-
-export function getAdminSession(): { isAuthenticated: boolean; email: string; token: string; expiresAt: number } | null {
-  try {
-    const raw = localStorage.getItem(ADMIN_AUTH_KEY);
-    if (!raw) return null;
-    const session = JSON.parse(raw);
-    if (Date.now() > session.expiresAt) {
-      localStorage.removeItem(ADMIN_AUTH_KEY);
-      return null;
-    }
-    return session;
-  } catch (e) {
-    return null;
-  }
-}
-
-export function saveAdminSession(email: string, token: string): void {
-  try {
-    const expiresAt = Date.now() + 8 * 60 * 60 * 1000; // 8 hours session
-    localStorage.setItem(
-      ADMIN_AUTH_KEY,
-      JSON.stringify({ isAuthenticated: true, email, token, expiresAt })
-    );
-  } catch (e) {
-    console.error('Failed to save admin session', e);
-  }
-}
-
-export function clearAdminSession(): void {
-  try {
-    localStorage.removeItem(ADMIN_AUTH_KEY);
   } catch (e) {
     // Ignore
   }

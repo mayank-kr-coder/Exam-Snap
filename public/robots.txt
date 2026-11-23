@@ -1,6 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin/login
 
 Sitemap: https://examsnap.in/sitemap.xml

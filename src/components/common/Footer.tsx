@@ -135,12 +135,6 @@ export const Footer: React.FC = () => {
                   Contact Support
                 </Link>
               </li>
-              <li>
-                <Link to="/admin" className="text-gray-400 hover:text-white transition flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
-                  <span>Admin Portal</span>
-                </Link>
-              </li>
             </ul>
           </div>
         </div>

@@ -43,14 +43,14 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="space-y-2">
           <h2 className="text-base font-bold text-navy">3. LocalStorage & Cookies</h2>
           <p>
-            We use your browser’s standard <code>localStorage</code> solely to remember non-sensitive user interface preferences (such as selected exam preset filters or admin authorization tokens). No personal images are ever stored in LocalStorage.
+            We use your browser’s standard <code>localStorage</code> solely to remember non-sensitive user interface preferences (such as selected exam preset filters). No personal images or identity documents are ever stored in LocalStorage.
           </p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-bold text-navy">4. Payments & Razorpay Gateway</h2>
+          <h2 className="text-base font-bold text-navy">4. Free Public Tool</h2>
           <p>
-            When purchasing the optional ₹29 Exam Pack pass, transaction processing is handled securely by Razorpay. ExamSnap does not collect or store credit card, debit card, or UPI banking credentials.
+            ExamSnap is a 100% free public preparation tool for all government and academic exam aspirants. No mandatory fees or account creation are required to prepare and download your documents.
           </p>
         </section>
       </div>
